@@ -7,11 +7,6 @@ const tokenPath: Fs.PathOrFileDescriptor = "./.credential/client_secret.json";
 const credentialPath: Fs.PathOrFileDescriptor = "./.credential/credentials.json";
 const credentials = JSON.parse(Fs.readFileSync(credentialPath).toString()).web;
 
-// const OAuth2Client = oauth2_v2.Oauth2;
-// // const OAuth2Client = Google.oauth2_v2.Oauth2;
-// const oauth2Client = new OAuth2Client({
-
-// });
 const oauth2Client = new google.auth.OAuth2(
   credentials.client_id,
   credentials.client_secret,
