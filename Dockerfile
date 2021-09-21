@@ -3,7 +3,7 @@ FROM node:slim AS build
 WORKDIR /app
 
 COPY package*.json ./ 
-COPY src/* ./
+COPY src/* ./src/
 COPY yarn.lock ./
 COPY tsconfig.json ./
 
