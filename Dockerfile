@@ -8,7 +8,8 @@ COPY yarn.lock ./
 COPY tsconfig.json ./
 
 RUN npm install \
-    && yarn 
+    && yarn \
+    && ls
 RUN npm run build
 
 FROM node:slim AS production
