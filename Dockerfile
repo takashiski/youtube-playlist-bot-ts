@@ -14,9 +14,10 @@ RUN npm run build
 
 FROM node:slim AS production
 
-COPY --from=build /app/ /app
+WORKDIR /app
 
-RUN npm install --production
+COPY --from=build /app/* /app/
 
+RUN ls && npm install --production
 
 CMD ["npm", "run", "start"]
