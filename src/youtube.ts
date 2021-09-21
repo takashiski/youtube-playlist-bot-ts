@@ -3,9 +3,10 @@ import {google, oauth2_v2} from "googleapis";
 const Youtube = google.youtube("v3");
 const oauth2Client = google.auth.OAuth2;
 
-const tokenPath: Fs.PathOrFileDescriptor = "./.credential/client_secret.json";
-const credentialPath: Fs.PathOrFileDescriptor = "./.credential/credentials.json";
-const credentials = JSON.parse(Fs.readFileSync(credentialPath).toString()).web;
+// const tokenPath: Fs.PathOrFileDescriptor = "./.credential/client_secret.json";
+// const credentialPath: Fs.PathOrFileDescriptor = "./.credential/credentials.json";
+// const credentials = JSON.parse(Fs.readFileSync(credentialPath).toString()).web;
+const credentials = JSON.parse(process.env.oauth2!).web;
 
 const auth = new oauth2Client(
   credentials.client_id,
@@ -50,7 +51,8 @@ export async function addPlaylist(channelName:string){
 
 export function init(){
   try{
-  auth.setCredentials(JSON.parse(Fs.readFileSync(tokenPath).toString()));
+  // auth.setCredentials(JSON.parse(Fs.readFileSync(tokenPath).toString()));
+  auth.setCredentials(JSON.parse(process.env.youtube!));
   }
   catch(e){
     console.error(e);

@@ -5,8 +5,10 @@ import { addVideoToPlaylist, addPlaylist, init } from "./youtube";
 
 import admin from "firebase-admin";
 
-const serviceAccountKeyPath: fs.PathOrFileDescriptor = ".credential/serviceAccountKey.json";
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountKeyPath).toString());
+//read firebase credentials
+// const serviceAccountKeyPath: fs.PathOrFileDescriptor = ".credential/serviceAccountKey.json";
+// const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountKeyPath).toString());
+const serviceAccount = JSON.parse(process.env.firebase!);
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 const collectionRef = db.collection("subscribedPlaylist");
@@ -14,9 +16,10 @@ const collectionRef = db.collection("subscribedPlaylist");
 const client = new Client({
   intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
 });
-const tokenPath: fs.PathOrFileDescriptor = ".credential/config.json"
-const TOKEN = JSON.parse(fs.readFileSync(tokenPath).toString());
-console.log(TOKEN);
+// const tokenPath: fs.PathOrFileDescriptor = ".credential/config.json"
+// const discordToken = JSON.parse(fs.readFileSync(tokenPath).toString());
+const discordToken = JSON.parse(process.env.discord!);
+console.log(discordToken);
 type SubscribedChannel = {
   id: string,
   name: string
@@ -133,7 +136,7 @@ type firestoreData = {
 async function main() {
   try {
     init();
-    client.login(TOKEN.token);
+    client.login(discordToken.token);
     console.log("read correct discord token");
     const snapshot = await collectionRef.doc("testPlaylist").get();
     if (snapshot.exists) {
