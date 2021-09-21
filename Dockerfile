@@ -17,6 +17,8 @@ FROM node:slim AS production
 WORKDIR /app
 
 COPY --from=build /app/out/ /app/out/
+COPY --from=build /app/package*.json /app/
+COPY --from=build /app/yarn.lock /app/
 
 RUN ls && npm install --production
 
