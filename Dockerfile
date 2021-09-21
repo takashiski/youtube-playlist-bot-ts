@@ -16,7 +16,7 @@ FROM node:slim AS production
 
 WORKDIR /app
 
-COPY --from=build /app/* /app/
+COPY --from=build /app/out/ /app/out/
 
 RUN ls && npm install --production
 
