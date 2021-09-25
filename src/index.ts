@@ -4,6 +4,10 @@ import path from "node:path";
 import { addVideoToPlaylist, addPlaylist, init } from "./youtube";
 
 import admin from "firebase-admin";
+import dotenv from "dotenv";
+if(process.env.NODE_ENV!=="production"){
+  dotenv.config();
+}
 
 //read firebase credentials
 // const serviceAccountKeyPath: fs.PathOrFileDescriptor = ".credential/serviceAccountKey.json";
@@ -11,10 +15,11 @@ import admin from "firebase-admin";
 const serviceAccount = JSON.parse(process.env.firebase!);
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
+const collectionName = "subscribedPlaylist";
 const collectionRef = db.collection("subscribedPlaylist");
 
 const client = new Client({
-  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
+  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS]
 });
 // const tokenPath: fs.PathOrFileDescriptor = ".credential/config.json"
 // const discordToken = JSON.parse(fs.readFileSync(tokenPath).toString());
@@ -46,6 +51,7 @@ client.on("messageCreate", async (m: Message) => {
     // const command = m.content.slice(m.content.indexOf(" "), undefined).trim();
     switch (command) {
       case "subscribe":
+        
         if (!subscribedMap.has(m.channelId)) {
           try {
             const playlistId = args[2]?args[2]:(await addPlaylist(channelName)).data.id!;
@@ -89,12 +95,14 @@ client.on("messageCreate", async (m: Message) => {
         m.react("🙆");
         break;
       default:
-        console.log(`command list:
+        m.channel.send(`command list:
           - subscribe
           - unsubscribe
           - list`);
     }
   }
+  //embedsの中にyoutube動画あったらプレイリストに突っ込む
+
   //待ち時間入れないとembed展開前に呼ばれて無反応になる
   await new Promise(resolve=>setTimeout(resolve, 500));
   if (m.embeds.length > 0) {
