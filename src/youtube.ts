@@ -3,9 +3,10 @@ import {google, oauth2_v2} from "googleapis";
 const Youtube = google.youtube("v3");
 const oauth2Client = google.auth.OAuth2;
 
-// const tokenPath: Fs.PathOrFileDescriptor = "./.credential/client_secret.json";
-// const credentialPath: Fs.PathOrFileDescriptor = "./.credential/credentials.json";
-// const credentials = JSON.parse(Fs.readFileSync(credentialPath).toString()).web;
+import dotenv from "dotenv";
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 const credentials = JSON.parse(process.env.oauth2!).web;
 
 const auth = new oauth2Client(
@@ -42,7 +43,7 @@ export async function addPlaylist(channelName:string){
       },
       snippet:{
         title:channelName,
-        description:"created by bot using takashiski's server"
+        description:"created by bot"
       }
     }
   })
@@ -51,7 +52,6 @@ export async function addPlaylist(channelName:string){
 
 export function init(){
   try{
-  // auth.setCredentials(JSON.parse(Fs.readFileSync(tokenPath).toString()));
   auth.setCredentials(JSON.parse(process.env.youtube!));
   }
   catch(e){
