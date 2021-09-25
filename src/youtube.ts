@@ -39,7 +39,7 @@ export async function addPlaylist(channelName:string){
     part:["snippet","status"],
     requestBody:{
       status:{
-        privacyStatus:"public"
+        privacyStatus:"unlisted"
       },
       snippet:{
         title:channelName,
