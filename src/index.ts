@@ -5,33 +5,20 @@ import { addVideoToPlaylist, addPlaylist, init } from "./youtube";
 
 import admin from "firebase-admin";
 import dotenv from "dotenv";
-if(process.env.NODE_ENV!=="production"){
+if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
 
-//read firebase credentials
-// const serviceAccountKeyPath: fs.PathOrFileDescriptor = ".credential/serviceAccountKey.json";
-// const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountKeyPath).toString());
 const serviceAccount = JSON.parse(process.env.firebase!);
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
-const collectionName = "subscribedPlaylist";
-const collectionRef = db.collection("subscribedPlaylist");
 
 const client = new Client({
   intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS]
 });
-// const tokenPath: fs.PathOrFileDescriptor = ".credential/config.json"
-// const discordToken = JSON.parse(fs.readFileSync(tokenPath).toString());
+
 const discordToken = JSON.parse(process.env.discord!);
 console.log(discordToken);
-type SubscribedChannel = {
-  id: string,
-  name: string
-}
-const subscribedMap = new Map<string, SubscribedChannel>();
-
-
 
 client.on("ready", () => {
   console.log("ready bot")
@@ -49,45 +36,45 @@ client.on("messageCreate", async (m: Message) => {
     const args = m.content.split(" ");
     const command = args[1];
     // const command = m.content.slice(m.content.indexOf(" "), undefined).trim();
+    const doc = db.collection("guilds").doc(m.guildId!).collection("subscribedChannels").doc(m.channelId);
     switch (command) {
       case "subscribe":
-        
-        if (!subscribedMap.has(m.channelId)) {
+        console.log((await doc.get()).data());
+        if (!(await doc.get()).data()) {
           try {
-            const playlistId = args[2]?args[2]:(await addPlaylist(channelName)).data.id!;
-            subscribedMap.set(m.channelId, {
-              id: playlistId,
-              name: channelName
+            await doc.set({
+              playlistId: args[2] ? args[2] : ((await addPlaylist(channelName)).data.id!),
+              channelName: channelName
             });
-            await updateSubscribedMap();
             m.react("🙆");
           }
-          catch (e) {
-            console.error(e);
+          catch (error) {
+            console.error(error);
             m.react("❌");
           }
+
+        }
+        else {
+          m.channel.send("this channel is already subscribed.");
         }
         break;
       case "unsubscribe":
-        if (subscribedMap.has(m.channelId)) {
-          subscribedMap.delete(m.channelId);
-          await updateSubscribedMap();
-          m.channel.send("unsubscribed");
+        if (await doc.get()) {
+          await doc.delete();
+          m.react("🙆");
+        } else {
+          m.channel.send("this channel has been subscribed yet.");
         }
-        else {
-          m.channel.send("I haven't subscribed this channel.");
-        }
-        m.react("🙆");
         break;
       case "list":
-        if (subscribedMap.size != 0) {
-          let channelListString = "subscribing channel list:\n\n";
-          subscribedMap.forEach((v, k, m) => {
-            channelListString += `  - ${getChannelNameFromId(k)} ${getPlaylistUrl(v.id)}`;
-            channelListString += "\n";
+        const channels = db.collection("guilds").doc(m.guildId!).collection("subscribedChannels");
+        let channelListString = "subscribing channel list:\n\n";
+        let lists = await channels.get();
+        if (lists.size > 0) {
+          lists.forEach((doc) => {
+            channelListString += ` - <#${doc.id}> ${doc.data().channelName} ${getPlaylistUrl(doc.data().playlistId)} \n`;
           });
           m.channel.send(channelListString);
-          console.log(subscribedMap);
         }
         else {
           m.channel.send("I subscribe no channel now.");
@@ -104,15 +91,12 @@ client.on("messageCreate", async (m: Message) => {
   //embedsの中にyoutube動画あったらプレイリストに突っ込む
 
   //待ち時間入れないとembed展開前に呼ばれて無反応になる
-  await new Promise(resolve=>setTimeout(resolve, 500));
-  if (m.embeds.length > 0) {
-    if (!subscribedMap.has(m.channelId)) {
-      console.error("I haven't subscribed this channel yet");
-      m.react("❓");
-      m.channel.send("I haven't subscribed this channel yet.");
-    }
-    else {
-      const playlistId = (subscribedMap.get(m.channelId))?.id!;
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const doc = await db.collection("guilds").doc(m.guildId!).collection("subscribedChannels").doc(m.channelId).get();
+  if (doc) {
+    if (m.embeds.length > 0) {
+      const playlistId = doc.data()!.playlistId;
       m.embeds.forEach(async (v, i, a) => {
         const url = new URL(v.video?.url!);
         console.log(v.video?.url!);
@@ -131,35 +115,16 @@ client.on("messageCreate", async (m: Message) => {
       });
     }
   }
+  else{
+    m.channel.send("this channel has not been subscribed yet.");
+  }
 });
 
-type fsChannelData = {
-  playlistId: string,
-  channelId: string,
-  channelName: string
-}
-type firestoreData = {
-  subscribedChannels: Array<fsChannelData>
-}
 async function main() {
   try {
     init();
     client.login(discordToken.token);
     console.log("read correct discord token");
-    const snapshot = await collectionRef.doc("testPlaylist").get();
-    if (snapshot.exists) {
-      const test: any = snapshot.data()!.subscribedChannels;
-      console.log(test);
-      const channels:Array<fsChannelData> = test;
-      channels.forEach((v) => {
-        subscribedMap.set(v.channelId, {
-          id: v.playlistId,
-          name: v.channelName
-        });
-      });
-      // console.log(snapshot.data());
-      console.log(subscribedMap);
-    }
   }
   catch (err) {
     console.error(err);
@@ -168,28 +133,7 @@ async function main() {
 
 main();
 
-async function updateSubscribedMap() {
-  const docRef = await collectionRef.doc("testPlaylist");
-  try {
-    const res = await docRef.set({
-      servername: "takashiski's sandbox",
-      subscribedChannels:[...subscribedMap.entries()].map(v => {
-      return {
-        channelId: v[0],
-        channelName: v[1].name,
-        playlistId: v[1].id
-      }
-    })}
-    );
-  }
-  catch (e) {
-    console.error(e);
-  }
-}
-function getChannelNameFromId(channelId:string){
-  return `<#${channelId}>`;
-}
-function getPlaylistUrl(playlistId:string){
+function getPlaylistUrl(playlistId: string) {
   const baseUrl = "https://www.youtube.com/playlist?list=";
-  return baseUrl+playlistId;
+  return baseUrl + playlistId;
 }
