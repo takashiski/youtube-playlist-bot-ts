@@ -154,33 +154,34 @@ client.on("messageCreate", async (m: Message) => {
 
 client.on("messageReactionAdd", async (reaction, user) => {
   if (user === client.user) return;
-  const doc = await db.collection("guilds").doc(reaction.message.guildId!).collection("transportChannels").doc(reaction.message.channelId).get();
-  console.log(doc.data());
-  if (doc.data()) {
-    console.log("get transport reaction");
-    const url = reaction.message.url;
-    const sendto = doc.data()!.sendto;
-    const channel = client.channels.cache.get(sendto);
-    const embeds = [
-      new MessageEmbed()
-        .setDescription(reaction.message.content!)
-        .setAuthor(reaction.message.author?.username!)
-    ];
-    reaction.message.embeds.forEach((v) => {
-      embeds.push(v);
-    });
-    if (channel?.isText()) {
-      try {
+  if (reaction.emoji.toString() === "😀") {
+    const doc = await db.collection("guilds").doc(reaction.message.guildId!).collection("transportChannels").doc(reaction.message.channelId).get();
+    console.log(doc.data());
+    if (doc.data()) {
+      console.log("get transport reaction");
+      const url = reaction.message.url;
+      const sendto = doc.data()!.sendto;
+      const channel = client.channels.cache.get(sendto);
+      const embeds = [
+        new MessageEmbed()
+          .setDescription(reaction.message.content!)
+          .setAuthor(reaction.message.author?.username!)
+      ];
+      reaction.message.embeds.forEach((v) => {
+        embeds.push(v);
+      });
+      if (channel?.isText()) {
+        try {
 
-        channel.send({
-          content: url,
-          embeds
-        });
+          channel.send({
+            content: url,
+            embeds
+          });
+        }
+        catch (error) {
+          console.log(error);
+        }
       }
-      catch (error) {
-        console.log(error);
-      }
-
     }
   }
 });
