@@ -13,7 +13,8 @@ admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
 const client = new Client({
-  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS]
+  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS],
+  partials:["CHANNEL","MESSAGE","REACTION"]
 });
 
 const discordToken = JSON.parse(process.env.discord!);
@@ -158,14 +159,15 @@ client.on("messageReactionAdd", async (reaction, user) => {
     const doc = await db.collection("guilds").doc(reaction.message.guildId!).collection("transportChannels").doc(reaction.message.channelId).get();
     console.log(doc.data());
     if (doc.data()) {
-      console.log("get transport reaction");
       const url = reaction.message.url;
       const sendto = doc.data()!.sendto;
       const channel = client.channels.cache.get(sendto);
+      let message=reaction.partial?(await reaction.fetch()).message:reaction.message; 
+      console.log("get transport reaction");
       const embeds = [
         new MessageEmbed()
-          .setDescription(reaction.message.content!)
-          .setAuthor(reaction.message.author?.username!)
+          .setDescription(message.content!)
+          .setAuthor(message.author?.username!)
       ];
       reaction.message.embeds.forEach((v) => {
         embeds.push(v);
