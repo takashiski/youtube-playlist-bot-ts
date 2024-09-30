@@ -6,7 +6,7 @@
   "dependencies": {
     "discord.js": "^13.1.0",
     "dotenv": "^10.0.0",
-    "express": "^4.17.1",
+    "express": "^4.21.0",
     "firebase-admin": "^9.11.1",
     "googleapis": "^86.1.0",
     "googleapis-common": "^5.0.5",
